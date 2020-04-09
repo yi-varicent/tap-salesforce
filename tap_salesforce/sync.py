@@ -145,9 +145,6 @@ def sync_records(sf, catalog_entry, state, counter):
 
     for rec in sf.query(catalog_entry, state):
         counter.increment()
-        LOGGER.error('----------')
-        LOGGER.error(schema)
-        LOGGER.error(rec)
         with Transformer(pre_hook=transform_bulk_data_hook) as transformer:
             rec = transformer.transform(rec, schema)
         rec = fix_record_anytype(rec, schema)
@@ -218,15 +215,10 @@ def sync_report(sf, catalog_entry, state, counter):
 
     for rec in sf.query_report(catalog_entry, state):
         counter.increment()
-        LOGGER.error('--------------')
-        LOGGER.error(schema)
         with Transformer() as transformer:
             rec = transformer.transform(rec, schema)
-        LOGGER.error('--------------')
-        LOGGER.error(rec)
         rec = fix_record_anytype(rec, schema)
-        LOGGER.error('--------------')
-        LOGGER.error(rec)
+
         singer.write_message(
             singer.RecordMessage(
                 stream=(

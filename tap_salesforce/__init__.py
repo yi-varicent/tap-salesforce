@@ -141,13 +141,8 @@ def do_discover(sf):
 def do_discover_report(sf):
     """Describes a Salesforce instance's reports and generates a JSON schema for each field."""
     global_description = sf.describe_reports()
-    LOGGER.error('-------')
-    LOGGER.error(global_description)
     report_id = global_description[0]['id']
     report_name = global_description[0]['name']
-    LOGGER.error('-------')
-    LOGGER.error(report_id)
-    LOGGER.error(report_name)
 
     sf_custom_setting_objects = []
     object_to_tag_references = {}

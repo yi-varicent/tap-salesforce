@@ -50,7 +50,6 @@ class ReportRest():
         results = []
         for row in report_results:
             data_cell = row['dataCells']
-            LOGGER.error(len(row['dataCells']))
             tmp_row = {}
             for i in range(0, len(row['dataCells'])):
                 if data_cell[i]['value'] != None:
