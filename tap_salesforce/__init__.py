@@ -219,6 +219,8 @@ def do_discover_report(sf):
             mdata = metadata.write(
                 mdata, ('properties', prop), 'inclusion', 'unsupported')
 
+        # this is the last entry with empty breadcumb which is required othwerise stream won't be picked up
+        mdata = metadata.write(mdata, (), '', [])
         schema = {
             'type': 'object',
             'additionalProperties': False,
