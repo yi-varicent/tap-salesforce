@@ -141,8 +141,13 @@ def do_discover(sf):
 def do_discover_report(sf):
     """Describes a Salesforce instance's reports and generates a JSON schema for each field."""
     global_description = sf.describe_reports()
-
-    reports_to_discover = {o['id'] for o in global_description}
+    LOGGER.error('-------')
+    LOGGER.error(global_description)
+    report_id = global_description[0]['id']
+    report_name = global_description[0]['name']
+    LOGGER.error('-------')
+    LOGGER.error(report_id)
+    LOGGER.error(report_name)
 
     sf_custom_setting_objects = []
     object_to_tag_references = {}
@@ -150,109 +155,107 @@ def do_discover_report(sf):
     # For each SF Report describe it, loop its fields and build a schema
     entries = []
 
-    for report_id in reports_to_discover:
+    report_description = sf.describe_reports(report_id)
 
-        report_description = sf.describe_reports(report_id)
+    fields = report_description['reportExtendedMetadata']['detailColumnInfo']
 
-        fields = report_description['reportExtendedMetadata']['detailColumnInfo']
+    unsupported_fields = set()
+    properties = {}
+    mdata = metadata.new()
 
-        unsupported_fields = set()
-        properties = {}
-        mdata = metadata.new()
+    # Loop over the report's fields
+    for f in fields:
+        field_name = f
+        filed = fields[field_name]
 
-        # Loop over the report's fields
-        for f in fields:
-            field_name = f
-            filed = fields[field_name]
+        property_schema, mdata = create_report_property_schema(
+            filed, mdata, sf.source_type)
 
-            property_schema, mdata = create_report_property_schema(
-                filed, mdata, sf.source_type)
+        # Compound Address fields and geolocations cannot be queried by the Bulk API
+        if filed['dataType'] in ("address", "location") and sf.api_type == tap_salesforce.salesforce.BULK_API_TYPE:
+            unsupported_fields.add(
+                (field_name, 'cannot query compound address fields or geolocations with bulk API'))
 
-            # Compound Address fields and geolocations cannot be queried by the Bulk API
-            if filed['dataType'] in ("address", "location") and sf.api_type == tap_salesforce.salesforce.BULK_API_TYPE:
-                unsupported_fields.add(
-                    (field_name, 'cannot query compound address fields or geolocations with bulk API'))
+        # we haven't been able to observe any records with a json field, so we
+        # are marking it as unavailable until we have an example to work with
+        if filed['dataType'] == "json":
+            unsupported_fields.add(
+                (field_name, 'do not currently support json fields - please contact support'))
 
-            # we haven't been able to observe any records with a json field, so we
-            # are marking it as unavailable until we have an example to work with
-            if filed['dataType'] == "json":
-                unsupported_fields.add(
-                    (field_name, 'do not currently support json fields - please contact support'))
+        inclusion = metadata.get(
+            mdata, ('properties', field_name), 'inclusion')
 
-            inclusion = metadata.get(
-                mdata, ('properties', field_name), 'inclusion')
-
-            if sf.select_fields_by_default and inclusion != 'unsupported':
-                mdata = metadata.write(
-                    mdata, ('properties', field_name), 'selected-by-default', True)
-
-            properties[field_name] = property_schema
-
-        # There are cases where compound fields are referenced by the associated
-        # subfields but are not actually present in the field list
-        field_name_set = {f for f in fields}
-        filtered_unsupported_fields = [
-            f for f in unsupported_fields if f[0] in field_name_set]
-        missing_unsupported_field_names = [
-            f[0] for f in unsupported_fields if f[0] not in field_name_set]
-
-        if missing_unsupported_field_names:
-            LOGGER.info("Ignoring the following unsupported fields for report %s as they are missing from the field list: %s",
-                        report_id,
-                        ', '.join(sorted(missing_unsupported_field_names)))
-
-        if filtered_unsupported_fields:
-            LOGGER.info("Not syncing the following unsupported fields for report %s: %s",
-                        report_id,
-                        ', '.join(sorted([k for k, _ in filtered_unsupported_fields])))
-
-        # Any property added to unsupported_fields has metadata generated and
-        # removed
-        for prop, description in filtered_unsupported_fields:
-            if metadata.get(mdata, ('properties', prop),
-                            'selected-by-default'):
-                metadata.delete(
-                    mdata, ('properties', prop), 'selected-by-default')
-
+        if sf.select_fields_by_default and inclusion != 'unsupported':
             mdata = metadata.write(
-                mdata, ('properties', prop), 'unsupported-description', description)
-            mdata = metadata.write(
-                mdata, ('properties', prop), 'inclusion', 'unsupported')
+                mdata, ('properties', field_name), 'selected-by-default', True)
 
-        # this is the last entry with empty breadcumb which is required othwerise stream won't be picked up
-        # table-key-properties is also required
+        properties[field_name] = property_schema
+
+    # There are cases where compound fields are referenced by the associated
+    # subfields but are not actually present in the field list
+    field_name_set = {f for f in fields}
+    filtered_unsupported_fields = [
+        f for f in unsupported_fields if f[0] in field_name_set]
+    missing_unsupported_field_names = [
+        f[0] for f in unsupported_fields if f[0] not in field_name_set]
+
+    if missing_unsupported_field_names:
+        LOGGER.info("Ignoring the following unsupported fields for report %s as they are missing from the field list: %s",
+                    report_id,
+                    ', '.join(sorted(missing_unsupported_field_names)))
+
+    if filtered_unsupported_fields:
+        LOGGER.info("Not syncing the following unsupported fields for report %s: %s",
+                    report_id,
+                    ', '.join(sorted([k for k, _ in filtered_unsupported_fields])))
+
+    # Any property added to unsupported_fields has metadata generated and
+    # removed
+    for prop, description in filtered_unsupported_fields:
+        if metadata.get(mdata, ('properties', prop),
+                        'selected-by-default'):
+            metadata.delete(
+                mdata, ('properties', prop), 'selected-by-default')
+
         mdata = metadata.write(
-            mdata, (), 'table-key-properties', [])
+            mdata, ('properties', prop), 'unsupported-description', description)
+        mdata = metadata.write(
+            mdata, ('properties', prop), 'inclusion', 'unsupported')
 
-        schema = {
-            'type': 'object',
-            'additionalProperties': False,
-            'properties': properties
-        }
+    # this is the last entry with empty breadcumb which is required othwerise stream won't be picked up
+    # table-key-properties is also required
+    mdata = metadata.write(
+        mdata, (), 'table-key-properties', [])
 
-        entry = {
-            'stream': report_id,
-            'tap_stream_id': report_id,
-            'schema': schema,
-            'metadata': metadata.to_list(mdata)
-        }
+    schema = {
+        'type': 'object',
+        'additionalProperties': False,
+        'properties': properties
+    }
 
-        entries.append(entry)
+    entry = {
+        'stream': report_name,
+        'tap_stream_id': report_id,
+        'schema': schema,
+        'metadata': metadata.to_list(mdata)
+    }
 
-        # For each custom setting field, remove its associated tag from entries
-        # See Blacklisting.md for more information
-        unsupported_tag_objects = [object_to_tag_references[f]
-                                   for f in sf_custom_setting_objects if f in object_to_tag_references]
-        if unsupported_tag_objects:
-            LOGGER.info(  # pylint:disable=logging-not-lazy
-                "Skipping the following Tag objects, Tags on Custom Settings Salesforce objects " +
-                "are not supported by the Bulk API:")
-            LOGGER.info(unsupported_tag_objects)
-            entries = [e for e in entries if e['stream']
-                       not in unsupported_tag_objects]
+    entries.append(entry)
 
-        result = {'streams': entries}
-        json.dump(result, sys.stdout, indent=4)
+    # For each custom setting field, remove its associated tag from entries
+    # See Blacklisting.md for more information
+    unsupported_tag_objects = [object_to_tag_references[f]
+                               for f in sf_custom_setting_objects if f in object_to_tag_references]
+    if unsupported_tag_objects:
+        LOGGER.info(  # pylint:disable=logging-not-lazy
+            "Skipping the following Tag objects, Tags on Custom Settings Salesforce objects " +
+            "are not supported by the Bulk API:")
+        LOGGER.info(unsupported_tag_objects)
+        entries = [e for e in entries if e['stream']
+                   not in unsupported_tag_objects]
+
+    result = {'streams': entries}
+    json.dump(result, sys.stdout, indent=4)
 
 
 def do_discover_object(sf):
@@ -545,16 +548,19 @@ def main_impl():
             api_type=CONFIG.get('api_type'),
             source_type=CONFIG.get('source_type'),
             object_name=CONFIG.get('object_name'),
-            report_id=CONFIG.get('report_id'))
+            report_id=CONFIG.get('report_id'),
+            report_name=CONFIG.get('report_name'))
 
         # Validate SF params
         if sf.source_type == 'object' and sf.object_name == None:
             LOGGER.error('Object name is required when source type is object')
             raise Exception(
                 'Object name is required when source type is object')
-        if sf.source_type == 'report' and sf.report_id == None:
-            LOGGER.error('Report id is required when source type is report')
-            raise Exception('Report id is required when source type is report')
+        if sf.source_type == 'report' and (sf.report_id == None or sf.report_name == None):
+            LOGGER.error(
+                'Report id and name is required when source type is report')
+            raise Exception(
+                'Report id and name is required when source type is report')
 
         sf.login()
 

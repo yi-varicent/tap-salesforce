@@ -15,7 +15,7 @@ class ReportRest():
 
     def query(self, catalog_entry, state):
 
-        report = self.sf.describe_reports(catalog_entry['stream'])
+        report = self.sf.describe_reports(catalog_entry['tap_stream_id'])
 
         return self._get_report_data(report, catalog_entry)
 

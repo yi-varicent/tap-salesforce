@@ -213,7 +213,8 @@ class Salesforce():
                  api_type=None,
                  source_type=None,
                  object_name=None,
-                 report_id=None):
+                 report_id=None,
+                 report_name=None):
         self.api_type = api_type.upper() if api_type else None
         self.refresh_token = refresh_token
         self.token = token
@@ -244,6 +245,7 @@ class Salesforce():
         self.source_type = source_type if source_type else None
         self.object_name = object_name if object_name else None
         self.report_id = report_id if report_id else None
+        self.report_name = report_name if report_name else None
 
         # validate start_date
         singer_utils.strptime(default_start_date)
@@ -383,6 +385,7 @@ class Salesforce():
             return [
                 {
                     "id": self.report_id,
+                    "name": self.report_name
                 }]
         else:
             endpoint = "analytics/reports/{}/describe".format(reportId)
