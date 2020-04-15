@@ -40,8 +40,7 @@ Config for reading a report
   "api_type": "BULK",
   "select_fields_by_default": true,
   "source_type": "report",
-  "report_id": "REPORT_ID",
-  "report_name": "REPORT_NAME
+  "report_id": "REPORT_ID"
 }
 ```
 
@@ -65,8 +64,6 @@ The `client_id` and `client_secret` keys are your OAuth Salesforce App secrets. 
 The `start_date` is used by the tap as a bound on SOQL queries when searching for records. This should be an [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) formatted date-time, like "2018-01-08T00:00:00Z". For more details, see the [Singer best practices for dates](https://github.com/singer-io/getting-started/blob/master/BEST_PRACTICES.md#dates).
 
 The `api_type` is used to switch the behavior of the tap between using Salesforce's "REST" and "BULK" APIs. When new fields are discovered in Salesforce objects, the `select_fields_by_default` key describes whether or not the tap will select those fields by default.
-
-When `source_type` is `report` then both `report_id` and `report_name` are required. we'll use report_name in the stream so it shows up properly on the Symon's UI
 
 ## Run Discovery
 

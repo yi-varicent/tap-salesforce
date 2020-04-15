@@ -142,7 +142,6 @@ def do_discover_report(sf):
     """Describes a Salesforce instance's reports and generates a JSON schema for each field."""
     global_description = sf.describe_reports()
     report_id = global_description[0]['id']
-    report_name = global_description[0]['name']
 
     sf_custom_setting_objects = []
     object_to_tag_references = {}
@@ -152,6 +151,7 @@ def do_discover_report(sf):
 
     report_description = sf.describe_reports(report_id)
 
+    report_name = report_description['attributes']['reportName']
     fields = report_description['reportExtendedMetadata']['detailColumnInfo']
 
     unsupported_fields = set()
@@ -543,19 +543,18 @@ def main_impl():
             api_type=CONFIG.get('api_type'),
             source_type=CONFIG.get('source_type'),
             object_name=CONFIG.get('object_name'),
-            report_id=CONFIG.get('report_id'),
-            report_name=CONFIG.get('report_name'))
+            report_id=CONFIG.get('report_id'))
 
         # Validate SF params
         if sf.source_type == 'object' and sf.object_name == None:
             LOGGER.error('Object name is required when source type is object')
             raise Exception(
                 'Object name is required when source type is object')
-        if sf.source_type == 'report' and (sf.report_id == None or sf.report_name == None):
+        if sf.source_type == 'report' and (sf.report_id == None):
             LOGGER.error(
-                'Report id and name is required when source type is report')
+                'Report id is required when source type is report')
             raise Exception(
-                'Report id and name is required when source type is report')
+                'Report id is required when source type is report')
 
         sf.login()
 
