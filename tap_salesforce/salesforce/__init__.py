@@ -248,6 +248,22 @@ class Salesforce():
         # validate start_date
         singer_utils.strptime(default_start_date)
 
+        # Validate params
+        if source_type != 'object' and source_type != 'report':
+            LOGGER.error(
+                'Invalid report_type, supported types are report & object')
+            raise Exception(
+                'Invalid report_type, supported types are report & object')
+        if source_type == 'object' and object_name == None:
+            LOGGER.error('Object name is required when source type is object')
+            raise Exception(
+                'Object name is required when source type is object')
+        if source_type == 'report' and (report_id == None):
+            LOGGER.error(
+                'Report id is required when source type is report')
+            raise Exception(
+                'Report id is required when source type is report')
+
     def _get_standard_headers(self):
         return {"Authorization": "Bearer {}".format(self.access_token)}
 
