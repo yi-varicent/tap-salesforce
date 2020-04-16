@@ -10,6 +10,7 @@ from singer import metadata, metrics
 
 from tap_salesforce.salesforce.bulk import Bulk
 from tap_salesforce.salesforce.rest import Rest
+from tap_salesforce.salesforce.report_rest import ReportRest
 from tap_salesforce.salesforce.exceptions import (
     TapSalesforceException,
     TapSalesforceQuotaExceededException)
@@ -127,15 +128,21 @@ QUERY_INCOMPATIBLE_SALESFORCE_OBJECTS = set(['ListViewChartInstance',
                                              'AttachedContentNote',
                                              'QuoteTemplateRichTextData'])
 
+
 def log_backoff_attempt(details):
-    LOGGER.info("ConnectionError detected, triggering backoff: %d try", details.get("tries"))
+    LOGGER.info(
+        "ConnectionError detected, triggering backoff: %d try", details.get("tries"))
 
 
-def field_to_property_schema(field, mdata): # pylint:disable=too-many-branches
+def field_to_property_schema(field, mdata, source_type):  # pylint:disable=too-many-branches
     property_schema = {}
 
-    field_name = field['name']
-    sf_type = field['type']
+    if source_type == 'report':
+        field_name = field['label']
+        sf_type = field['dataType']
+    elif source_type == 'object':
+        field_name = field['name']
+        sf_type = field['type']
 
     if sf_type in STRING_TYPES:
         property_schema['type'] = "string"
@@ -166,7 +173,8 @@ def field_to_property_schema(field, mdata): # pylint:disable=too-many-branches
     elif sf_type in LOOSE_TYPES:
         return property_schema, mdata  # No type = all types
     elif sf_type in BINARY_TYPES:
-        mdata = metadata.write(mdata, ('properties', field_name), "inclusion", "unsupported")
+        mdata = metadata.write(
+            mdata, ('properties', field_name), "inclusion", "unsupported")
         mdata = metadata.write(mdata, ('properties', field_name),
                                "unsupported-description", "binary data")
         return property_schema, mdata
@@ -180,13 +188,15 @@ def field_to_property_schema(field, mdata): # pylint:disable=too-many-branches
     elif sf_type == 'json':
         property_schema['type'] = "string"
     else:
-        raise TapSalesforceException("Found unsupported type: {}".format(sf_type))
+        raise TapSalesforceException(
+            "Found unsupported type: {}".format(sf_type))
 
     # The nillable field cannot be trusted
     if field_name != 'Id' and sf_type != 'location' and sf_type not in DATE_TYPES:
         property_schema['type'] = ["null", property_schema['type']]
 
     return property_schema, mdata
+
 
 class Salesforce():
     # pylint: disable=too-many-instance-attributes,too-many-arguments
@@ -200,7 +210,10 @@ class Salesforce():
                  is_sandbox=None,
                  select_fields_by_default=None,
                  default_start_date=None,
-                 api_type=None):
+                 api_type=None,
+                 source_type=None,
+                 object_name=None,
+                 report_id=None):
         self.api_type = api_type.upper() if api_type else None
         self.refresh_token = refresh_token
         self.token = token
@@ -217,8 +230,10 @@ class Salesforce():
             quota_percent_per_run) if quota_percent_per_run is not None else 25
         self.quota_percent_total = float(
             quota_percent_total) if quota_percent_total is not None else 80
-        self.is_sandbox = is_sandbox is True or (isinstance(is_sandbox, str) and is_sandbox.lower() == 'true')
-        self.select_fields_by_default = select_fields_by_default is True or (isinstance(select_fields_by_default, str) and select_fields_by_default.lower() == 'true')
+        self.is_sandbox = is_sandbox is True or (isinstance(
+            is_sandbox, str) and is_sandbox.lower() == 'true')
+        self.select_fields_by_default = select_fields_by_default is True or (isinstance(
+            select_fields_by_default, str) and select_fields_by_default.lower() == 'true')
         self.default_start_date = default_start_date
         self.rest_requests_attempted = 0
         self.jobs_completed = 0
@@ -226,15 +241,40 @@ class Salesforce():
         self.data_url = "{}/services/data/v41.0/{}"
         self.pk_chunking = False
 
+        self.source_type = source_type if source_type else None
+        self.object_name = object_name if object_name else None
+        self.report_id = report_id if report_id else None
+
         # validate start_date
         singer_utils.strptime(default_start_date)
+
+        # Validate params
+        if source_type != 'object' and source_type != 'report':
+            LOGGER.error(
+                'Invalid report_type, supported types are report & object')
+            raise Exception(
+                'Invalid report_type, supported types are report & object')
+        if source_type == 'object' and object_name == None:
+            LOGGER.error('Object name is required when source type is object')
+            raise Exception(
+                'Object name is required when source type is object')
+        if source_type == 'report' and (report_id == None):
+            LOGGER.error(
+                'Report id is required when source type is report')
+            raise Exception(
+                'Report id is required when source type is report')
 
     def _get_standard_headers(self):
         return {"Authorization": "Bearer {}".format(self.access_token)}
 
+    def _get_report_query_headers(self):
+        return {"Authorization": "Bearer {}".format(self.access_token),
+                "Content-Type": "application/json"}
+
     # pylint: disable=anomalous-backslash-in-string,line-too-long
     def check_rest_quota_usage(self, headers):
-        match = re.search('^api-usage=(\d+)/(\d+)$', headers.get('Sforce-Limit-Info'))
+        match = re.search('^api-usage=(\d+)/(\d+)$',
+                          headers.get('Sforce-Limit-Info'))
 
         if match is None:
             return
@@ -244,7 +284,8 @@ class Salesforce():
         LOGGER.info("Used %s of %s daily REST API quota", remaining, allotted)
 
         percent_used_from_total = (remaining / allotted) * 100
-        max_requests_for_run = int((self.quota_percent_per_run * allotted) / 100)
+        max_requests_for_run = int(
+            (self.quota_percent_per_run * allotted) / 100)
 
         if percent_used_from_total > self.quota_percent_total:
             total_message = ("Salesforce has reported {}/{} ({:3.2f}%) total REST quota " +
@@ -259,7 +300,8 @@ class Salesforce():
             partial_message = ("This replication job has made {} REST requests ({:3.2f}% of " +
                                "total quota). Terminating replication due to allotted " +
                                "quota of {}% per replication.").format(self.rest_requests_attempted,
-                                                                       (self.rest_requests_attempted / allotted) * 100,
+                                                                       (self.rest_requests_attempted /
+                                                                        allotted) * 100,
                                                                        self.quota_percent_per_run)
             raise TapSalesforceQuotaExceededException(partial_message)
 
@@ -271,10 +313,13 @@ class Salesforce():
                           on_backoff=log_backoff_attempt)
     def _make_request(self, http_method, url, headers=None, body=None, stream=False, params=None):
         if http_method == "GET":
-            LOGGER.info("Making %s request to %s with params: %s", http_method, url, params)
-            resp = self.session.get(url, headers=headers, stream=stream, params=params)
+            LOGGER.info("Making %s request to %s with params: %s",
+                        http_method, url, params)
+            resp = self.session.get(
+                url, headers=headers, stream=stream, params=params)
         elif http_method == "POST":
-            LOGGER.info("Making %s request to %s with body %s", http_method, url, body)
+            LOGGER.info("Making %s request to %s with body %s",
+                        http_method, url, body)
             resp = self.session.post(url, headers=headers, data=body)
         else:
             raise TapSalesforceException("Unsupported HTTP method")
@@ -303,7 +348,8 @@ class Salesforce():
 
         resp = None
         try:
-            resp = self._make_request("POST", login_url, body=login_body, headers={"Content-Type": "application/x-www-form-urlencoded"})
+            resp = self._make_request("POST", login_url, body=login_body, headers={
+                                      "Content-Type": "application/x-www-form-urlencoded"})
 
             LOGGER.info("OAuth2 login successful")
 
@@ -313,27 +359,30 @@ class Salesforce():
             self.instance_url = auth['instance_url']
         except Exception as e:
             error_message = str(e)
-            if resp is None and hasattr(e, 'response') and e.response is not None: #pylint:disable=no-member
-                resp = e.response #pylint:disable=no-member
+            if resp is None and hasattr(e, 'response') and e.response is not None:  # pylint:disable=no-member
+                resp = e.response  # pylint:disable=no-member
             # NB: requests.models.Response is always falsy here. It is false if status code >= 400
             if isinstance(resp, requests.models.Response):
-                error_message = error_message + ", Response from Salesforce: {}".format(resp.text)
+                error_message = error_message + \
+                    ", Response from Salesforce: {}".format(resp.text)
             raise Exception(error_message) from e
         finally:
             LOGGER.info("Starting new login timer")
-            self.login_timer = threading.Timer(REFRESH_TOKEN_EXPIRATION_PERIOD, self.login)
+            self.login_timer = threading.Timer(
+                REFRESH_TOKEN_EXPIRATION_PERIOD, self.login)
             self.login_timer.start()
 
-    def describe(self, sobject=None):
-        """Describes all objects or a specific object"""
+    def describe(self):
+        """Describes a specific object or a specific report"""
         headers = self._get_standard_headers()
-        if sobject is None:
-            endpoint = "sobjects"
-            endpoint_tag = "sobjects"
+
+        if self.source_type == 'object':
+            endpoint = f'sobjects/{self.object_name}/describe'
+            endpoint_tag = self.object_name
             url = self.data_url.format(self.instance_url, endpoint)
-        else:
-            endpoint = "sobjects/{}/describe".format(sobject)
-            endpoint_tag = sobject
+        elif self.source_type == 'report':
+            endpoint = f'analytics/reports/{self.report_id}/describe'
+            endpoint_tag = self.report_id
             url = self.data_url.format(self.instance_url, endpoint)
 
         with metrics.http_request_timer("describe") as timer:
@@ -349,9 +398,9 @@ class Salesforce():
 
         return [k for k in properties.keys()
                 if singer.should_sync_field(metadata.get(mdata, ('properties', k), 'inclusion'),
-                                            metadata.get(mdata, ('properties', k), 'selected'),
+                                            metadata.get(
+                                                mdata, ('properties', k), 'selected'),
                                             self.select_fields_by_default)]
-
 
     def get_start_date(self, state, catalog_entry):
         catalog_metadata = metadata.to_map(catalog_entry['metadata'])
@@ -364,7 +413,8 @@ class Salesforce():
     def _build_query_string(self, catalog_entry, start_date, end_date=None, order_by_clause=True):
         selected_properties = self._get_selected_properties(catalog_entry)
 
-        query = "SELECT {} FROM {}".format(",".join(selected_properties), catalog_entry['stream'])
+        query = "SELECT {} FROM {}".format(
+            ",".join(selected_properties), catalog_entry['stream'])
 
         catalog_metadata = metadata.to_map(catalog_entry['metadata'])
         replication_key = catalog_metadata.get((), {}).get('replication-key')
@@ -374,7 +424,8 @@ class Salesforce():
                 replication_key,
                 start_date)
             if end_date:
-                end_date_clause = " AND {} < {}".format(replication_key, end_date)
+                end_date_clause = " AND {} < {}".format(
+                    replication_key, end_date)
             else:
                 end_date_clause = ""
 
@@ -397,6 +448,10 @@ class Salesforce():
             raise TapSalesforceException(
                 "api_type should be REST or BULK was: {}".format(
                     self.api_type))
+
+    def query_report(self, catalog_entry, state):
+        reportRest = ReportRest(self)
+        return reportRest.query(catalog_entry, state)
 
     def get_blacklisted_objects(self):
         if self.api_type == BULK_API_TYPE:
