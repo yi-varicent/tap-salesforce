@@ -356,37 +356,17 @@ class Salesforce():
                 REFRESH_TOKEN_EXPIRATION_PERIOD, self.login)
             self.login_timer.start()
 
-    def describe(self, sobject=None):
-        """Describes all objects or a specific object"""
+    def describe(self):
+        """Describes a specific object or a specific report"""
         headers = self._get_standard_headers()
-        if sobject is None:
-            # There is no need to describe entire schema, we already should have the object name here
-            return {"sobjects": [
-                {
-                    "name": self.object_name,
-                }]}
-        else:
-            endpoint = "sobjects/{}/describe".format(sobject)
-            endpoint_tag = sobject
+
+        if self.source_type == 'object':
+            endpoint = f'sobjects/{self.object_name}/describe'
+            endpoint_tag = self.object_name
             url = self.data_url.format(self.instance_url, endpoint)
-
-        with metrics.http_request_timer("describe") as timer:
-            timer.tags['endpoint'] = endpoint_tag
-            resp = self._make_request('GET', url, headers=headers)
-
-        return resp.json()
-
-    def describe_reports(self, reportId=None):
-        """Describes all reports or a specific report"""
-        headers = self._get_standard_headers()
-        if reportId is None:
-            return [
-                {
-                    "id": self.report_id
-                }]
-        else:
-            endpoint = "analytics/reports/{}/describe".format(reportId)
-            endpoint_tag = reportId
+        elif self.source_type == 'report':
+            endpoint = f'analytics/reports/{self.report_id}/describe'
+            endpoint_tag = self.report_id
             url = self.data_url.format(self.instance_url, endpoint)
 
         with metrics.http_request_timer("describe") as timer:

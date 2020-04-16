@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='tap-salesforce',
-      version='1.4.31',
+      version='2.0.0',
       description='Singer.io tap for extracting data from the Salesforce API',
       author='Stitch',
       url='https://singer.io',
@@ -19,10 +19,10 @@ setup(name='tap-salesforce',
           tap-salesforce=tap_salesforce:main
       ''',
       packages=['tap_salesforce', 'tap_salesforce.salesforce'],
-      package_data = {
+      package_data={
           'tap_salesforce/schemas': [
               # add schema.json filenames here
           ]
       },
       include_package_data=True,
-)
+      )

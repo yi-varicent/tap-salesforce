@@ -198,6 +198,14 @@ def sync_records(sf, catalog_entry, state, counter):
 
 
 def sync_report(sf, catalog_entry, state, counter):
+
+    # Make sure that the report id in the config & stream are the same
+    if catalog_entry['tap_stream_id'] != sf.report_id:
+        LOGGER.error(
+            'report_id in the stream should match the report_id in the config')
+        raise Exception(
+            'report_id in the stream should match the report_id in the config')
+
     chunked_bookmark = singer_utils.strptime_with_tz(
         sf.get_start_date(state, catalog_entry))
     stream = catalog_entry['stream']

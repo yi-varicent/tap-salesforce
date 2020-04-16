@@ -23,8 +23,8 @@ class ReportRest():
         #  4- Report data that is returned is a bit different than normal object data (they have links, etc..)
         #     We'll do an intial transform so that we can pass the rows to the singer for transformation
 
-        # Since report's name & ID are different we have to read the Id from this property
-        report = self.sf.describe_reports(catalog_entry['tap_stream_id'])
+        # Getting the report Id from the config (should be the same as the catalog entry)
+        report = self.sf.describe()
 
         return self._get_report_data(report, catalog_entry)
 
@@ -33,8 +33,7 @@ class ReportRest():
             report_metadata,
             catalog_entry):
         body = {"reportMetadata": report_metadata['reportMetadata']}
-        url = "{}/services/data/v48.0/analytics/reports/query".format(
-            self.sf.instance_url)
+        url = f'{self.sf.instance_url}/services/data/v48.0/analytics/reports/query'
 
         headers = self.sf._get_report_query_headers()
 

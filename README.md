@@ -14,9 +14,9 @@ $ tap-salesforce --config config.json --properties properties.json --state state
 
 ## Symon Specific updates
 
-Originally taps --discover takes a long time since it gest the schema of objects one by one, also it doesn't support getting reports.
+Originally taps --discover takes a long time since it gets the schema of objects one by one, also it doesn't support getting reports.
 
-- Added a new config to only discover one reprot or one object
+- Added a new config to only discover one report or one object
 - Added the ability to process reports
 
 # Quickstart
