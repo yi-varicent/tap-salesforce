@@ -537,22 +537,6 @@ def main_impl():
             object_name=CONFIG.get('object_name'),
             report_id=CONFIG.get('report_id'))
 
-        # Validate SF params
-        if sf.source_type != 'object' and sf.source_type != 'report':
-            LOGGER.error(
-                'Invalid report_type, supported types are report & object')
-            raise Exception(
-                'Invalid report_type, supported types are report & object')
-        if sf.source_type == 'object' and sf.object_name == None:
-            LOGGER.error('Object name is required when source type is object')
-            raise Exception(
-                'Object name is required when source type is object')
-        if sf.source_type == 'report' and (sf.report_id == None):
-            LOGGER.error(
-                'Report id is required when source type is report')
-            raise Exception(
-                'Report id is required when source type is report')
-
         sf.login()
 
         if args.discover:
