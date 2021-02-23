@@ -160,10 +160,10 @@ def do_discover_report(sf):
         property_schema, mdata = create_report_property_schema(
             field, mdata, sf.source_type)
 
-        # Compound Address fields and geolocations cannot be queried by the Bulk API
+        # Compound Address fields and geolocations cannot be queried by the Bulk API, so we ignore them
         if field['dataType'] in ("address", "location") and sf.api_type == tap_salesforce.salesforce.BULK_API_TYPE:
-            unsupported_fields.add(
-                (field_name, 'cannot query compound address fields or geolocations with bulk API'))
+            mdata.pop(('properties', field_name), None)
+            continue
 
         # we haven't been able to observe any records with a json field, so we
         # are marking it as unavailable until we have an example to work with
@@ -305,10 +305,10 @@ def do_discover_object(sf):
         property_schema, mdata = create_property_schema(
             f, mdata, sf.source_type)
 
-        # Compound Address fields and geolocations cannot be queried by the Bulk API
+        # Compound Address fields and geolocations cannot be queried by the Bulk API, so we ignore them
         if f['type'] in ("address", "location") and sf.api_type == tap_salesforce.salesforce.BULK_API_TYPE:
-            unsupported_fields.add(
-                (field_name, 'cannot query compound address fields or geolocations with bulk API'))
+            mdata.pop(('properties', field_name), None)
+            continue
 
         # we haven't been able to observe any records with a json field, so we
         # are marking it as unavailable until we have an example to work with
