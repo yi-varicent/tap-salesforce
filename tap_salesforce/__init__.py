@@ -226,7 +226,8 @@ def do_discover_report(sf):
         'stream': report_name,
         'tap_stream_id': sf.report_id,
         'schema': schema,
-        'metadata': metadata.to_list(mdata)
+        'metadata': metadata.to_list(mdata),
+        'order': [str(column) for column in properties]
     }
 
     entries.append(entry)
@@ -543,6 +544,19 @@ def main_impl():
             do_discover(sf)
         elif args.properties:
             catalog = args.properties
+
+            # Sort the properties
+            streams = catalog['streams']
+            for stream in streams:
+                new_properties = {}
+                old_properties = stream['schema']['properties']
+                order = stream['order']
+
+                for column in order:
+                    new_properties[column] = old_properties[column]
+
+                stream['schema']['properties'] = new_properties
+
             state = build_state(args.state, catalog)
             do_sync(sf, catalog, state)
     finally:
