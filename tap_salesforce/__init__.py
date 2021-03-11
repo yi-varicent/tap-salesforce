@@ -227,7 +227,7 @@ def do_discover_report(sf):
         'tap_stream_id': sf.report_id,
         'schema': schema,
         'metadata': metadata.to_list(mdata),
-        'order': [str(column) for column in properties]
+        'column_order': [str(column) for column in properties]
     }
 
     entries.append(entry)
@@ -550,7 +550,7 @@ def main_impl():
             for stream in streams:
                 new_properties = {}
                 old_properties = stream['schema']['properties']
-                order = stream['order']
+                order = stream['column_order']
 
                 for column in order:
                     new_properties[column] = old_properties[column]
