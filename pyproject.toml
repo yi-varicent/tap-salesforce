@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "tap-salesforce"
+version = "2.0.3"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "~3.7"
+requests = "~2.20.0"
+singer-python = "~5.3.1"
+xmltodict = "~0.11.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
