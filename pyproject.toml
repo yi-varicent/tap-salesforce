@@ -1,8 +1,10 @@
 [tool.poetry]
 name = "tap-salesforce"
-version = "2.0.5"
-description = ""
-authors = []
+version = "2.0.6"
+description = "Singer.io tap for extracting data from the Salesforce API"
+authors = ["Stitch"]
+homepage = "https://singer.io"
+classifiers = ["Programming Language :: Python :: 3 :: Only"]
 
 [tool.poetry.dependencies]
 python = "~3.7"
