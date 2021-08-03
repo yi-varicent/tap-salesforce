@@ -400,7 +400,8 @@ def do_discover_object(sf):
         'stream': sobject_name,
         'tap_stream_id': sobject_name,
         'schema': schema,
-        'metadata': metadata.to_list(mdata)
+        'metadata': metadata.to_list(mdata),
+        'column_order': [str(column) for column in properties]
     }
 
     entries.append(entry)
