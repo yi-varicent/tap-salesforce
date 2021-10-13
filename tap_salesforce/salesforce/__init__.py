@@ -41,9 +41,12 @@ STRING_TYPES = set([
 ])
 
 NUMBER_TYPES = set([
-    'double',
-    'currency',
-    'percent'
+    'double'
+])
+
+NUMBER_OR_STRING_TYPES = set([
+    'currency', # currency types could include the currency iso code if the salesforce org has multicurrency enabled
+    'percent' # For some objects/reports, percentages include the actual '%' character, requiring the whole value to be treated as a string. For others, it's just the number
 ])
 
 DATE_TYPES = set([
@@ -152,6 +155,8 @@ def field_to_property_schema(field, mdata, source_type):  # pylint:disable=too-m
         property_schema["anyOf"] = [date_type, string_type]
     elif sf_type == "boolean":
         property_schema['type'] = "boolean"
+    elif sf_type in NUMBER_OR_STRING_TYPES:
+        property_schema['type'] = ["number", "string", "null"]
     elif sf_type in NUMBER_TYPES:
         property_schema['type'] = "number"
     elif sf_type == "address":
@@ -192,7 +197,7 @@ def field_to_property_schema(field, mdata, source_type):  # pylint:disable=too-m
             "Found unsupported type: {}".format(sf_type))
 
     # The nillable field cannot be trusted
-    if field_name != 'Id' and sf_type != 'location' and sf_type not in DATE_TYPES:
+    if field_name != 'Id' and sf_type != 'location' and sf_type not in DATE_TYPES and sf_type not in NUMBER_OR_STRING_TYPES:
         property_schema['type'] = ["null", property_schema['type']]
 
     return property_schema, mdata
