@@ -61,6 +61,7 @@ def resume_syncing_bulk_query(sf, catalog_entry, job_id, state, counter):
 
     start_time = singer_utils.now()
     stream = catalog_entry['stream']
+    stream_id = catalog_entry['tap_stream_id']
     stream_alias = catalog_entry.get('stream_alias')
     catalog_metadata = metadata.to_map(catalog_entry.get('metadata'))
     replication_key = catalog_metadata.get((), {}).get('replication-key')
@@ -81,8 +82,7 @@ def resume_syncing_bulk_query(sf, catalog_entry, job_id, state, counter):
                 rec = fix_record_anytype(rec, schema)
                 singer.write_message(
                     singer.RecordMessage(
-                        stream=(
-                            stream_alias or stream),
+                        stream=(stream_id or stream_alias or stream),
                         record=rec,
                         version=stream_version,
                         time_extracted=start_time))
@@ -131,6 +131,7 @@ def sync_records(sf, catalog_entry, state, counter):
     chunked_bookmark = singer_utils.strptime_with_tz(
         sf.get_start_date(state, catalog_entry))
     stream = catalog_entry['stream']
+    stream_id = catalog_entry['tap_stream_id']
     schema = catalog_entry['schema']
     stream_alias = catalog_entry.get('stream_alias')
     catalog_metadata = metadata.to_map(catalog_entry['metadata'])
@@ -150,8 +151,7 @@ def sync_records(sf, catalog_entry, state, counter):
         rec = fix_record_anytype(rec, schema)
         singer.write_message(
             singer.RecordMessage(
-                stream=(
-                    stream_alias or stream),
+                stream=(stream_id or stream_alias or stream),
                 record=rec,
                 version=stream_version,
                 time_extracted=start_time))
@@ -209,6 +209,7 @@ def sync_report(sf, catalog_entry, state, counter):
     chunked_bookmark = singer_utils.strptime_with_tz(
         sf.get_start_date(state, catalog_entry))
     stream = catalog_entry['stream']
+    stream_id = catalog_entry['tap_stream_id']
     schema = catalog_entry['schema']
     stream_alias = catalog_entry.get('stream_alias')
     catalog_metadata = metadata.to_map(catalog_entry['metadata'])
@@ -229,8 +230,7 @@ def sync_report(sf, catalog_entry, state, counter):
 
         singer.write_message(
             singer.RecordMessage(
-                stream=(
-                    stream_alias or stream),
+                stream=(stream_id or stream_alias or stream),
                 record=rec,
                 version=stream_version,
                 time_extracted=start_time))

@@ -433,6 +433,7 @@ def do_sync(sf, catalog, state):
     for catalog_entry in catalog["streams"]:
         stream_version = get_stream_version(catalog_entry, state)
         stream = catalog_entry['stream']
+        stream_id = (catalog_entry['tap_stream_id'] or stream)
         stream_alias = catalog_entry.get('stream_alias')
         stream_name = catalog_entry["tap_stream_id"]
         activate_version_message = singer.ActivateVersionMessage(
@@ -462,7 +463,7 @@ def do_sync(sf, catalog, state):
         key_properties = metadata.to_map(catalog_entry['metadata']).get(
             (), {}).get('table-key-properties')
         singer.write_schema(
-            stream,
+            stream_id,
             catalog_entry['schema'],
             key_properties,
             replication_key,
