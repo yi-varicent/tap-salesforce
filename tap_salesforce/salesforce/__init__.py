@@ -6,6 +6,7 @@ import requests
 from requests.exceptions import RequestException
 import singer
 import singer.utils as singer_utils
+import json
 from singer import metadata, metrics
 
 from tap_salesforce.salesforce.bulk import Bulk
@@ -422,9 +423,16 @@ class Salesforce():
         query = "SELECT {} FROM {}".format(
             ",".join(selected_properties), catalog_entry['stream'])
 
+
+        LOGGER.info("YI: CATALOG ENTRY: ")
+        LOGGER.info(catalog_entry)
+        LOGGER.info(json.dumps(catalog_entry, indent=4, sort_keys=True))
+
         catalog_metadata = metadata.to_map(catalog_entry['metadata'])
         replication_key = catalog_metadata.get((), {}).get('replication-key')
+        validrepkeys = catalog_metadata.get((), {}).get('valid-replication-keys')
         LOGGER.info("YI: REPLICATIONKEY: " + str(replication_key))
+        LOGGER.info("YI: VALIDREPLICATIONKEY: " + str(validrepkeys))
         if replication_key:
             where_clause = " WHERE {} >= {} ".format(
                 replication_key,
@@ -442,7 +450,7 @@ class Salesforce():
             return query + where_clause + end_date_clause
         else:
             LOGGER.info("YI: no replication key, so query has no start date, here's what catalogmetadat is")
-            LOGGER.info(list(catalog_metadata))
+            LOGGER.info(catalog_metadata)
             return query
 
     def query(self, catalog_entry, state):
