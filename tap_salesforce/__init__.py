@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 import json
 import sys
+
 import singer
 import singer.utils as singer_utils
-from singer import metadata, metrics
 import tap_salesforce.salesforce
-from tap_salesforce.sync import (
-    sync_stream, resume_syncing_bulk_query, get_stream_version)
+from singer import metadata, metrics
 from tap_salesforce.salesforce import Salesforce
 from tap_salesforce.salesforce.bulk import Bulk
 from tap_salesforce.salesforce.exceptions import (
-    TapSalesforceException, TapSalesforceQuotaExceededException, TapSalesforceBulkAPIDisabledException)
+    TapSalesforceBulkAPIDisabledException, TapSalesforceException,
+    TapSalesforceQuotaExceededException)
+from tap_salesforce.sync import (get_stream_version, resume_syncing_bulk_query,
+                                 sync_stream)
 
 LOGGER = singer.get_logger()
 
@@ -545,13 +547,16 @@ def main_impl():
         sf.login()
 
         if args.discover:
+            LOGGER.info("YI DISCOVER")
             do_discover(sf)
         elif args.properties:
+            LOGGER.info("YI ARG PROPERTIES")
             catalog = args.properties
 
             # Sort the properties
             streams = catalog['streams']
             for stream in streams:
+                LOGGER.info("YI STREAM: ")
                 new_properties = {}
                 old_properties = stream['schema']['properties']
                 order = stream['column_order']
