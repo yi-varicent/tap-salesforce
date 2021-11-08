@@ -1,20 +1,19 @@
+import json
 import re
 import threading
 import time
+
 import backoff
 import requests
-from requests.exceptions import RequestException
 import singer
 import singer.utils as singer_utils
-import json
+from requests.exceptions import RequestException
 from singer import metadata, metrics
-
 from tap_salesforce.salesforce.bulk import Bulk
-from tap_salesforce.salesforce.rest import Rest
-from tap_salesforce.salesforce.report_rest import ReportRest
 from tap_salesforce.salesforce.exceptions import (
-    TapSalesforceException,
-    TapSalesforceQuotaExceededException)
+    TapSalesforceException, TapSalesforceQuotaExceededException)
+from tap_salesforce.salesforce.report_rest import ReportRest
+from tap_salesforce.salesforce.rest import Rest
 
 LOGGER = singer.get_logger()
 
@@ -424,8 +423,8 @@ class Salesforce():
             ",".join(selected_properties), catalog_entry['stream'])
 
 
-        LOGGER.info("YI: CATALOG ENTRY: ")
-        LOGGER.info(catalog_entry)
+        #LOGGER.info("YI: CATALOG ENTRY: ")
+        #LOGGER.info(catalog_entry)
         #LOGGER.info(json.dumps(catalog_entry, indent=4, sort_keys=True))
 
         catalog_metadata = metadata.to_map(catalog_entry['metadata'])
