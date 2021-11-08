@@ -426,7 +426,7 @@ class Salesforce():
 
         LOGGER.info("YI: CATALOG ENTRY: ")
         LOGGER.info(catalog_entry)
-        LOGGER.info(json.dumps(catalog_entry, indent=4, sort_keys=True))
+        #LOGGER.info(json.dumps(catalog_entry, indent=4, sort_keys=True))
 
         catalog_metadata = metadata.to_map(catalog_entry['metadata'])
         replication_key = catalog_metadata.get((), {}).get('replication-key')
