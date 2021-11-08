@@ -440,6 +440,9 @@ def do_sync(sf, catalog, state):
 
         catalog_metadata = metadata.to_map(catalog_entry['metadata'])
         replication_key = catalog_metadata.get((), {}).get('replication-key')
+        valrep2 = catalog_metadata.get((), {}).get('valid-replication-keys')
+        LOGGER.info("YI: REPKEY2: " + str(replication_key))
+        LOGGER.info("YI: VALREPKE^Y2: " + str(valrep2))
 
         mdata = metadata.to_map(catalog_entry['metadata'])
 

@@ -145,6 +145,7 @@ def sync_records(sf, catalog_entry, state, counter):
 
     for rec in sf.query(catalog_entry, state):
         counter.increment()
+        LOGGER.info("YI: query, got record" + counter.value)
         with Transformer(pre_hook=transform_bulk_data_hook) as transformer:
             rec = transformer.transform(rec, schema)
         rec = fix_record_anytype(rec, schema)
