@@ -416,6 +416,7 @@ class Salesforce():
                                     replication_key) or self.default_start_date)
 
     def _build_query_string(self, catalog_entry, start_date, end_date=None, order_by_clause=True):
+        LOGGER.info("YI: STARTDATE: " + str(start_date))
         selected_properties = self._get_selected_properties(catalog_entry)
 
         query = "SELECT {} FROM {}".format(
@@ -423,7 +424,7 @@ class Salesforce():
 
         catalog_metadata = metadata.to_map(catalog_entry['metadata'])
         replication_key = catalog_metadata.get((), {}).get('replication-key')
-
+        LOGGER.info("YI: REPLICATIONKEY: " + str(replication_key))
         if replication_key:
             where_clause = " WHERE {} >= {} ".format(
                 replication_key,
@@ -440,6 +441,8 @@ class Salesforce():
 
             return query + where_clause + end_date_clause
         else:
+            LOGGER.info("YI: no replication key, so query has no start date, here's what catalogmetadat is")
+            LOGGER.info(list(catalog_metadata))
             return query
 
     def query(self, catalog_entry, state):
