@@ -19,6 +19,8 @@ Originally taps --discover takes a long time since it gets the schema of objects
 - Added a new config to only discover one report or one object
 - Added the ability to process reports
 
+- When importing an object, we ignore rows that have been deleted (and are in the recycling bin on Salesforce)
+
 # Quickstart
 
 ## Install the tap

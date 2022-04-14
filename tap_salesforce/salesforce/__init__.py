@@ -45,8 +45,8 @@ NUMBER_TYPES = set([
 ])
 
 NUMBER_OR_STRING_TYPES = set([
-    'currency', # currency types could include the currency iso code if the salesforce org has multicurrency enabled
-    'percent' # For some objects/reports, percentages include the actual '%' character, requiring the whole value to be treated as a string. For others, it's just the number
+    'currency',  # currency types could include the currency iso code if the salesforce org has multicurrency enabled
+    'percent'  # For some objects/reports, percentages include the actual '%' character, requiring the whole value to be treated as a string. For others, it's just the number
 ])
 
 DATE_TYPES = set([
@@ -421,26 +421,32 @@ class Salesforce():
         query = "SELECT {} FROM {}".format(
             ",".join(selected_properties), catalog_entry['stream'])
 
+        where_clauses = []
+
+        if 'IsDeleted' in selected_properties:
+            where_clauses.append("IsDeleted = false")
+
         catalog_metadata = metadata.to_map(catalog_entry['metadata'])
         replication_key = catalog_metadata.get((), {}).get('replication-key')
 
         if replication_key:
-            where_clause = " WHERE {} >= {} ".format(
+            where_clauses.append("{} >= {} ".format(
                 replication_key,
-                start_date)
+                start_date))
             if end_date:
-                end_date_clause = " AND {} < {}".format(
-                    replication_key, end_date)
-            else:
-                end_date_clause = ""
+                where_clauses.append("{} < {}".format(
+                    replication_key, end_date))
 
+        if len(where_clauses) > 0:
+            where_clause = ' AND '.join(where_clauses)
+            query += ' WHERE '
+            query += where_clause
+
+        if replication_key and order_by_clause:
             order_by = " ORDER BY {} ASC".format(replication_key)
-            if order_by_clause:
-                return query + where_clause + end_date_clause + order_by
+            query += order_by
 
-            return query + where_clause + end_date_clause
-        else:
-            return query
+        return query
 
     def query(self, catalog_entry, state):
         if self.api_type == BULK_API_TYPE:
