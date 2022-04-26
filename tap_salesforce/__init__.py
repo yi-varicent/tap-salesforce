@@ -523,6 +523,7 @@ def do_sync(sf, catalog, state):
 def main_impl():
     args = singer_utils.parse_args(REQUIRED_CONFIG_KEYS)
     CONFIG.update(args.config)
+    LOGGER.info("[TIMING] entered main_impl")
 
     sf = None
     try:
@@ -541,9 +542,12 @@ def main_impl():
             report_id=CONFIG.get('report_id'))
 
         sf.login()
+        LOGGER.info("[TIMING] logged in")
 
         if args.discover:
+            LOGGER.info("[TIMING] start discovery")
             do_discover(sf)
+            LOGGER.info("[TIMING] end discovery")
         elif args.properties:
             catalog = args.properties
 
@@ -560,7 +564,9 @@ def main_impl():
                 stream['schema']['properties'] = new_properties
 
             state = build_state(args.state, catalog)
+            LOGGER.info("[TIMING] start do sync")
             do_sync(sf, catalog, state)
+            LOGGER.info("[TIMING] end do sync")
     finally:
         if sf:
             if sf.rest_requests_attempted > 0:
@@ -578,6 +584,7 @@ def main_impl():
 def main():
     try:
         main_impl()
+        print()
     except TapSalesforceQuotaExceededException as e:
         LOGGER.critical(e)
         sys.exit(2)

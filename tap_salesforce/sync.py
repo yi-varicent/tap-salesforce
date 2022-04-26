@@ -58,6 +58,8 @@ def resume_syncing_bulk_query(sf, catalog_entry, job_id, state, counter):
     current_bookmark = singer_utils.strptime_with_tz(current_bookmark)
     batch_ids = singer.get_bookmark(
         state, catalog_entry['tap_stream_id'], 'BatchIDs')
+    
+    LOGGER.info("[TIMING] batchids " + str(batch_ids))
 
     start_time = singer_utils.now()
     stream = catalog_entry['stream']
@@ -113,8 +115,10 @@ def sync_stream(sf, catalog_entry, state):
     with metrics.record_counter(stream) as counter:
         try:
             if sf.source_type == 'object':
+                LOGGER.info("[TIMING] syncing object")
                 sync_records(sf, catalog_entry, state, counter)
             elif sf.source_type == 'report':
+                LOGGER.info("[TIMING] syncing report")
                 sync_report(sf, catalog_entry, state, counter)
             singer.write_state(state)
         except RequestException as ex:
