@@ -148,32 +148,74 @@ def sync_records(sf, catalog_entry, state, counter):
 
     LOGGER.info('Syncing Salesforce data for stream %s', stream)
 
+    querynum=1
+    LOGGER.info("query" + str(querynum))
+    LOGGER.info("state " + str(state))
+    prequery = time.time()
+
+
+    timep= time.time()
+
+
+    query0 = 0
+    query1 = 0
+    query2 = 0
+    query3 = 0
+    query4 = 0
+    query5 = 0
+    query6 = 0
+    query7 = 0
+
+
     for rec in sf.query(catalog_entry, state):
+        qtime = time.time()
+
         counter.increment()
-        with Transformer(pre_hook=transform_bulk_data_hook) as transformer:
-            rec = transformer.transform(rec, schema)
+        # LOGGER.info("PRE TRNASFORM: " + str(rec))
+        # with Transformer(pre_hook=transform_bulk_data_hook) as transformer:
+        #     rec = transformer.transform(rec, schema)
+        # LOGGER.info("POST TRNASFORM: " + str(rec))
+
+        query1 = query1+ (time.time() - qtime)
+        qtime = time.time()
+
         rec = fix_record_anytype(rec, schema)
+        query2 = query2+ (time.time() - qtime)
+        qtime = time.time()
+
         singer.write_message(
             singer.RecordMessage(
                 stream=(stream_id or stream_alias or stream),
                 record=rec,
                 version=stream_version,
                 time_extracted=start_time))
+        query3 = query3+ (time.time() - qtime)
+        qtime = time.time()
 
         replication_key_value = replication_key and singer_utils.strptime_with_tz(
             rec[replication_key])
+        query4 = query4+ (time.time() - qtime)
+        qtime = time.time()
 
         if sf.pk_chunking:
             if replication_key_value and replication_key_value <= start_time and replication_key_value > chunked_bookmark:
                 # Replace the highest seen bookmark and save the state in case we need to resume later
                 chunked_bookmark = singer_utils.strptime_with_tz(
                     rec[replication_key])
+                query5 = query5+ (time.time() - qtime)
+                qtime = time.time()
+
                 state = singer.write_bookmark(
                     state,
                     catalog_entry['tap_stream_id'],
                     'JobHighestBookmarkSeen',
                     singer_utils.strftime(chunked_bookmark))
+                query6 = query6+ (time.time() - qtime)
+                qtime = time.time()
+
                 singer.write_state(state)
+                query7 = query7+ (time.time() - qtime)
+                qtime = time.time()
         # Before writing a bookmark, make sure Salesforce has not given us a
         # record with one outside our range
         elif replication_key_value and replication_key_value <= start_time:
@@ -182,15 +224,35 @@ def sync_records(sf, catalog_entry, state, counter):
                 catalog_entry['tap_stream_id'],
                 replication_key,
                 rec[replication_key])
+            query6 = query6+ (time.time() - qtime)
+            qtime = time.time()
+
             singer.write_state(state)
+            query7 = query7+ (time.time() - qtime)
+            qtime = time.time()
+
+    LOGGER.info('{}: {}'.format("q1 transform ", query1))
+    LOGGER.info('{}: {}'.format("q2 fixrecordtype ", query2))
+    LOGGER.info('{}: {}'.format("q3 writemessage ", query3))
+    LOGGER.info('{}: {}'.format("q4 replication_key_value ", query4))
+    LOGGER.info('{}: {}'.format("q5 ifchunkedbookmore ", query5))
+    LOGGER.info('{}: {}'.format("q6 writebookmark ", query6))
+    LOGGER.info('{}: {}'.format("q7 write_state ", query7))
+
+
+
 
         # Tables with no replication_key will send an
         # activate_version message for the next sync
+    LOGGER.info('{}: {}'.format("notreplekey", time.time() - timep))
+    timep= time.time()
     if not replication_key:
         singer.write_message(activate_version_message)
         state = singer.write_bookmark(
             state, catalog_entry['tap_stream_id'], 'version', None)
 
+    LOGGER.info('{}: {}'.format("pkchunk", time.time() - timep))
+    timep= time.time()
     # If pk_chunking is set, only write a bookmark at the end
     if sf.pk_chunking:
         # Write a bookmark with the highest value we've seen
@@ -199,6 +261,9 @@ def sync_records(sf, catalog_entry, state, counter):
             catalog_entry['tap_stream_id'],
             replication_key,
             singer_utils.strftime(chunked_bookmark))
+
+    LOGGER.info('{}: {}'.format("exit", time.time() - timep))
+    timep= time.time()
 
 
 def sync_report(sf, catalog_entry, state, counter):
