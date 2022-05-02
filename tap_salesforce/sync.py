@@ -17,6 +17,8 @@ def remove_blacklisted_fields(data):
 
 
 def transform_bulk_data_hook(data, typ, schema):
+    global query01time
+    query01time = time.time()
     result = data
     if isinstance(data, dict):
         result = remove_blacklisted_fields(data)
@@ -32,6 +34,9 @@ def transform_bulk_data_hook(data, typ, schema):
     # change the data so that it is None.
     if data == "" and "null" in schema['type']:
         result = None
+    
+    global query01
+    query01 = query01 + (time.time() - query01time)
 
     return result
 
@@ -130,7 +135,8 @@ def sync_stream(sf, catalog_entry, state):
 
         return counter
 
-
+query01 = 0
+query01time = time.time()
 def sync_records(sf, catalog_entry, state, counter):
     chunked_bookmark = singer_utils.strptime_with_tz(
         sf.get_start_date(state, catalog_entry))
@@ -165,6 +171,8 @@ def sync_records(sf, catalog_entry, state, counter):
     query5 = 0
     query6 = 0
     query7 = 0
+    global query01 
+    query01 = 0
 
 
     for rec in sf.query(catalog_entry, state):
@@ -172,8 +180,9 @@ def sync_records(sf, catalog_entry, state, counter):
 
         counter.increment()
         # LOGGER.info("PRE TRNASFORM: " + str(rec))
-        # with Transformer(pre_hook=transform_bulk_data_hook) as transformer:
-        #     rec = transformer.transform(rec, schema)
+        global query01time
+        with Transformer(pre_hook=transform_bulk_data_hook) as transformer:
+            rec = transformer.transform(rec, schema)
         # LOGGER.info("POST TRNASFORM: " + str(rec))
 
         query1 = query1+ (time.time() - qtime)
@@ -232,6 +241,7 @@ def sync_records(sf, catalog_entry, state, counter):
             qtime = time.time()
 
     LOGGER.info('{}: {}'.format("q1 transform ", query1))
+    LOGGER.info('{}: {}'.format("q01 transformbulkdata ", query01))
     LOGGER.info('{}: {}'.format("q2 fixrecordtype ", query2))
     LOGGER.info('{}: {}'.format("q3 writemessage ", query3))
     LOGGER.info('{}: {}'.format("q4 replication_key_value ", query4))
