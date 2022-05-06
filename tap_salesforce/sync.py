@@ -174,8 +174,11 @@ def sync_records(sf, catalog_entry, state, counter):
     global query01 
     query01 = 0
 
-
+    # querycount = 0
     for rec in sf.query(catalog_entry, state):
+        # querycount = querycount + 1
+        # if querycount % 100000 == 0:
+        #     LOGGER.info("querycount: " + str(querycount))
         qtime = time.time()
 
         counter.increment()

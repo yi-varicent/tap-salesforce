@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import sys
+import time
 import singer
 import singer.utils as singer_utils
 from singer import metadata, metrics
@@ -443,6 +444,7 @@ def do_sync(sf, catalog, state):
         replication_key = catalog_metadata.get((), {}).get('replication-key')
 
         mdata = metadata.to_map(catalog_entry['metadata'])
+        LOGGER.info(str(mdata))
 
         if not stream_is_selected(mdata):
             LOGGER.info("%s: Skipping - not selected", stream_name)
@@ -478,6 +480,7 @@ def do_sync(sf, catalog, state):
                 # Resuming a sync should clear out the remaining state once finished
                 counter = resume_syncing_bulk_query(
                     sf, catalog_entry, job_id, state, counter)
+                LOGGER.info("HERE1")
                 LOGGER.info("%s: Completed sync (%s rows)",
                             stream_name, counter.value)
                 # Remove Job info from state once we complete this resumed query. One of a few cases could have occurred:
@@ -512,6 +515,7 @@ def do_sync(sf, catalog, state):
                                               'version',
                                               stream_version)
             counter = sync_stream(sf, catalog_entry, state)
+            LOGGER.info("HERE2")
             LOGGER.info("%s: Completed sync (%s rows)",
                         stream_name, counter.value)
 
@@ -524,7 +528,7 @@ def main_impl():
     args = singer_utils.parse_args(REQUIRED_CONFIG_KEYS)
     CONFIG.update(args.config)
     LOGGER.info("[TIMING] entered main_impl")
-
+    LOGGER.info("apitype: " + CONFIG.get('api_type'))
     sf = None
     try:
         sf = Salesforce(
@@ -582,9 +586,11 @@ def main_impl():
 
 
 def main():
+    LOGGER.info('hi')
+    begin = time.time()
     try:
         main_impl()
-        print()
+        LOGGER.info('{}: {}'.format("full run", time.time() - begin))
     except TapSalesforceQuotaExceededException as e:
         LOGGER.critical(e)
         sys.exit(2)

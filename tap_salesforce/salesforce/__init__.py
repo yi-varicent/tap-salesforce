@@ -317,6 +317,7 @@ class Salesforce():
                           factor=2,
                           on_backoff=log_backoff_attempt)
     def _make_request(self, http_method, url, headers=None, body=None, stream=False, params=None):
+        starttime = time.time()
         if http_method == "GET":
             LOGGER.info("Making %s request to %s with params: %s",
                         http_method, url, params)
@@ -328,7 +329,6 @@ class Salesforce():
             resp = self.session.post(url, headers=headers, data=body)
         else:
             raise TapSalesforceException("Unsupported HTTP method")
-
         try:
             resp.raise_for_status()
         except RequestException as ex:
@@ -337,6 +337,9 @@ class Salesforce():
         if resp.headers.get('Sforce-Limit-Info') is not None:
             self.rest_requests_attempted += 1
             self.check_rest_quota_usage(resp.headers)
+
+
+        LOGGER.info('{}: {}'.format("request timer", time.time() - starttime))
 
         return resp
 
@@ -362,6 +365,10 @@ class Salesforce():
 
             self.access_token = auth['access_token']
             self.instance_url = auth['instance_url']
+            LOGGER.info(self.access_token)
+
+            resp = self._make_request("GET", 'https://ironmountain.my.salesforce.com/services/data', headers=self._get_standard_headers())
+            LOGGER.info(resp.text)
         except Exception as e:
             error_message = str(e)
             if resp is None and hasattr(e, 'response') and e.response is not None:  # pylint:disable=no-member

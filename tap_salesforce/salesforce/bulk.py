@@ -1,6 +1,7 @@
 # pylint: disable=protected-access
 import csv
 import json
+import os
 import sys
 import time
 import tempfile
@@ -106,14 +107,26 @@ class Bulk():
                "Failed to write query result" in failure_message
 
     def _bulk_query(self, catalog_entry, state):
+        LOGGER.info("start bulk")
+        inittime = time.time()
         job_id = self._create_job(catalog_entry)
+        LOGGER.info('{}: {}'.format("CREATE JOB", time.time() - inittime))
+        timep = time.time()
         start_date = self.sf.get_start_date(state, catalog_entry)
 
         batch_id = self._add_batch(catalog_entry, job_id, start_date)
+        LOGGER.info('{}: {}'.format("ADD BATCH, id: " + str(batch_id), time.time() - timep))
+        timep= time.time()
 
         self._close_job(job_id)
+        LOGGER.info('{}: {}'.format("CLOSE JOB", time.time() - timep))
+        timep= time.time()
 
         batch_status = self._poll_on_batch_status(job_id, batch_id)
+        LOGGER.info('{}: {}'.format("pollonbatchstatus", time.time() - timep))
+        timep= time.time()
+
+        LOGGER.info('{}: {}'.format("bulk init", time.time() - inittime))
 
         if batch_status['state'] == 'Failed':
             if self._can_pk_chunk_job(batch_status['stateMessage']):
@@ -139,17 +152,22 @@ class Bulk():
             else:
                 raise TapSalesforceException(batch_status['stateMessage'])
         else:
+            getrestime = time.time()
             for result in self.get_batch_results(job_id, batch_id, catalog_entry):
                 yield result
+            LOGGER.info('{}: {}'.format("bulk quer", time.time() - getrestime))
 
     def _bulk_query_with_pk_chunking(self, catalog_entry, start_date):
         LOGGER.info("Retrying Bulk Query with PK Chunking")
 
         # Create a new job
+        LOGGER.info("CREATE JOB")
         job_id = self._create_job(catalog_entry, True)
 
+        LOGGER.info("ADD BATCH")
         self._add_batch(catalog_entry, job_id, start_date, False)
 
+        LOGGER.info("POLL BATCH")
         batch_status = self._poll_on_pk_chunked_batch_status(job_id)
         batch_status['job_id'] = job_id
 
@@ -187,6 +205,7 @@ class Bulk():
                 body=json.dumps(body))
 
         job = resp.json()
+        LOGGER.info(job)
 
         return job['id']
 
@@ -223,13 +242,19 @@ class Bulk():
                 batches = self._get_batches(job_id)
 
     def _poll_on_batch_status(self, job_id, batch_id):
+        LOGGER.info('batch status: ')
+        batchtime=time.time()
         batch_status = self._get_batch(job_id=job_id,
                                        batch_id=batch_id)
+        LOGGER.info('{}: {}'.format("batch ", time.time() - batchtime))
+        batchtime= time.time()
 
         while batch_status['state'] not in ['Completed', 'Failed', 'Not Processed']:
             time.sleep(BATCH_STATUS_POLLING_SLEEP)
             batch_status = self._get_batch(job_id=job_id,
                                            batch_id=batch_id)
+            LOGGER.info('{}: {}'.format("batch ", time.time() - batchtime))
+            batchtime= time.time()
 
         return batch_status
 
@@ -280,13 +305,18 @@ class Bulk():
     def get_batch_results(self, job_id, batch_id, catalog_entry):
         """Given a job_id and batch_id, queries the batches results and reads
         CSV lines yielding each line as a record."""
+        LOGGER.info("get batch results")
         headers = self._get_bulk_headers()
         endpoint = "job/{}/batch/{}/result".format(job_id, batch_id)
         url = self.bulk_url.format(self.sf.instance_url, endpoint)
 
+        batchtime = time.time()
         with metrics.http_request_timer("batch_result_list") as timer:
             timer.tags['sobject'] = catalog_entry['stream']
             batch_result_resp = self.sf._make_request('GET', url, headers=headers)
+
+        LOGGER.info('{}: {}'.format("batch result list ", time.time() - batchtime))
+        batchtime= time.time()
 
         # Returns a Dict where input:
         #   <result-list><result>1</result><result>2</result></result-list>
@@ -294,6 +324,8 @@ class Bulk():
         batch_result_list = xmltodict.parse(batch_result_resp.text,
                                             xml_attribs=False,
                                             force_list={'result'})['result-list']
+        LOGGER.info('{}: {}'.format("parse batch result list ", time.time() - batchtime))
+        batchtime = time.time()
 
         for result in batch_result_list['result']:
             endpoint = "job/{}/batch/{}/result/{}".format(job_id, batch_id, result)
@@ -301,22 +333,76 @@ class Bulk():
             headers['Content-Type'] = 'text/csv'
 
             with tempfile.NamedTemporaryFile(mode="w+", encoding="utf8") as csv_file:
+                batchtime= time.time()
+                batchwrite = time.time()
                 resp = self.sf._make_request('GET', url, headers=headers, stream=True)
+                LOGGER.info('{}: {}'.format("get a batch ", time.time() - batchtime))
+                batchtime= time.time()
+                chunktime= time.time()
+                chunkiter = 0
+                chunkwrite = 0
+                chunknum=0
                 for chunk in resp.iter_content(chunk_size=ITER_CHUNK_SIZE, decode_unicode=True):
+                    chunkiter += time.time() - chunktime
+                    chunktime= time.time()
+
                     if chunk:
+                        # if chunknum < 10:
+                        #     LOGGER.info("CHUNK")
+                        #     LOGGER.info(chunk)
+                        # chunknum = chunknum + 1
                         # Replace any NULL bytes in the chunk so it can be safely given to the CSV reader
                         csv_file.write(chunk.replace('\0', ''))
+                        chunkwrite += time.time() - chunktime
+                        chunktime= time.time()
 
+                LOGGER.info('{}: {}'.format("chunkiter ", chunkiter))
+                LOGGER.info('{}: {}'.format("chunkwrite ", chunkwrite))
+                LOGGER.info('{}: {}'.format("done chunks ", time.time() - batchtime))
+                batchtime= time.time()
+
+                LOGGER.info("file size")
+                LOGGER.info(csv_file.tell())
                 csv_file.seek(0)
                 csv_reader = csv.reader(csv_file,
                                         delimiter=',',
                                         quotechar='"')
+                LOGGER.info('{}: {}'.format("reader make ", time.time() - batchtime))
+                batchtime= time.time()
 
                 column_name_list = next(csv_reader)
+                LOGGER.info('{}: {}'.format("next call ", time.time() - batchtime))
+                batchtime= time.time()
+                LOGGER.info('{}: {}'.format("ccolumn name list ", column_name_list))
 
+
+                batchtime= time.time()
+                LOGGER.info('{}: {}'.format("pre dictzip ", time.time() - batchwrite))
+
+                ziptime = 0
+                linetime = 0
+                yieldtime = 0
+                forline = time.time()
                 for line in csv_reader:
+                    linetime = linetime + (time.time() - forline)
+
+
+                    prezip= time.time()
                     rec = dict(zip(column_name_list, line))
+                    ziptime = ziptime + (time.time() - prezip)
+
+
+
+                    yieldt= time.time()
                     yield rec
+                    yieldtime = yieldtime + (time.time() - yieldt)
+
+                    forline = time.time()
+                LOGGER.info('{}: {}'.format("zipamount ", ziptime))
+                LOGGER.info('{}: {}'.format("forline ", linetime))
+                LOGGER.info('{}: {}'.format("yield ", yieldtime))
+                LOGGER.info('{}: {}'.format("for line in csvreader ", time.time() - batchtime))
+                batchtime= time.time()
 
     def _close_job(self, job_id):
         endpoint = "job/{}".format(job_id)
