@@ -1,14 +1,14 @@
 [[package]]
 name = "backoff"
-version = "1.3.2"
+version = "1.8.0"
 description = "Function decoration for backoff and retry"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "certifi"
-version = "2021.5.30"
+version = "2021.10.8"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -16,7 +16,7 @@ python-versions = "*"
 
 [[package]]
 name = "charset-normalizer"
-version = "2.0.1"
+version = "2.0.12"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
 category = "main"
 optional = false
@@ -26,8 +26,16 @@ python-versions = ">=3.5.0"
 unicode_backport = ["unicodedata2"]
 
 [[package]]
+name = "ciso8601"
+version = "2.2.0"
+description = "Fast ISO8601 date time parser for Python written in C"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "idna"
-version = "3.2"
+version = "3.3"
 description = "Internationalized Domain Names in Applications (IDNA)"
 category = "main"
 optional = false
@@ -65,7 +73,7 @@ python-versions = "*"
 
 [[package]]
 name = "requests"
-version = "2.26.0"
+version = "2.27.1"
 description = "Python HTTP for Humans."
 category = "main"
 optional = false
@@ -91,14 +99,15 @@ python-versions = "*"
 
 [[package]]
 name = "singer-python"
-version = "5.3.3"
+version = "5.10.0"
 description = "Singer.io utility library"
 category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-backoff = "1.3.2"
+backoff = "1.8.0"
+ciso8601 = "*"
 jsonschema = "2.6.0"
 python-dateutil = ">=2.6.0"
 pytz = "2018.4"
@@ -117,14 +126,14 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
 name = "urllib3"
-version = "1.26.6"
+version = "1.26.9"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 
 [package.extras]
-brotli = ["brotlipy (>=0.6.0)"]
+brotli = ["brotlicffi (>=0.8.0)", "brotli (>=1.0.9)", "brotlipy (>=0.6.0)"]
 secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
 socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
@@ -139,23 +148,27 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.7"
-content-hash = "5f74613058cfaffda360af645b624e1bd46aaf1bcc6d96b2c5c4975076b01b63"
+content-hash = "222781801b5d68df0c53b1cf6ed5beca21868598f190b69b322f3bdc690438f1"
 
 [metadata.files]
 backoff = [
-    {file = "backoff-1.3.2.tar.gz", hash = "sha256:608cd3c17c7ae541fb45454cf8236271d13f3cdae932e56879f26bd737344aa8"},
+    {file = "backoff-1.8.0-py2.py3-none-any.whl", hash = "sha256:d340bb6f36d025c04214b8925112d8456970e5f28dda46e4f1133bf5c622cb0a"},
+    {file = "backoff-1.8.0.tar.gz", hash = "sha256:c7187f15339e775aec926dc6e5e42f8a3ad7d3c2b9a6ecae7b535000f70cd838"},
 ]
 certifi = [
-    {file = "certifi-2021.5.30-py2.py3-none-any.whl", hash = "sha256:50b1e4f8446b06f41be7dd6338db18e0990601dce795c2b1686458aa7e8fa7d8"},
-    {file = "certifi-2021.5.30.tar.gz", hash = "sha256:2bbf76fd432960138b3ef6dda3dde0544f27cbf8546c458e60baf371917ba9ee"},
+    {file = "certifi-2021.10.8-py2.py3-none-any.whl", hash = "sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569"},
+    {file = "certifi-2021.10.8.tar.gz", hash = "sha256:78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872"},
 ]
 charset-normalizer = [
-    {file = "charset-normalizer-2.0.1.tar.gz", hash = "sha256:ad0da505736fc7e716a8da15bf19a985db21ac6415c26b34d2fafd3beb3d927e"},
-    {file = "charset_normalizer-2.0.1-py3-none-any.whl", hash = "sha256:b68b38179052975093d71c1b5361bf64afd80484697c1f27056e50593e695ceb"},
+    {file = "charset-normalizer-2.0.12.tar.gz", hash = "sha256:2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597"},
+    {file = "charset_normalizer-2.0.12-py3-none-any.whl", hash = "sha256:6881edbebdb17b39b4eaaa821b438bf6eddffb4468cf344f09f89def34a8b1df"},
+]
+ciso8601 = [
+    {file = "ciso8601-2.2.0.tar.gz", hash = "sha256:14ad817ed31a698372d42afa81b0173d71cd1d0b48b7499a2da2a01dcc8695e6"},
 ]
 idna = [
-    {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},
-    {file = "idna-3.2.tar.gz", hash = "sha256:467fbad99067910785144ce333826c71fb0e63a425657295239737f7ecd125f3"},
+    {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
+    {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
 ]
 jsonschema = [
     {file = "jsonschema-2.6.0-py2.py3-none-any.whl", hash = "sha256:000e68abd33c972a5248544925a0cae7d1125f9bf6c58280d37546b946769a08"},
@@ -170,8 +183,8 @@ pytz = [
     {file = "pytz-2018.4.tar.gz", hash = "sha256:c06425302f2cf668f1bba7a0a03f3c1d34d4ebeef2c72003da308b3947c7f749"},
 ]
 requests = [
-    {file = "requests-2.26.0-py2.py3-none-any.whl", hash = "sha256:6c1246513ecd5ecd4528a0906f910e8f0f9c6b8ec72030dc9fd154dc1a6efd24"},
-    {file = "requests-2.26.0.tar.gz", hash = "sha256:b8aa58f8cf793ffd8782d3d8cb19e66ef36f7aba4353eec859e74678b01b07a7"},
+    {file = "requests-2.27.1-py2.py3-none-any.whl", hash = "sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d"},
+    {file = "requests-2.27.1.tar.gz", hash = "sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"},
 ]
 simplejson = [
     {file = "simplejson-3.11.1-cp27-cp27m-win32.whl", hash = "sha256:38c2b563cd03363e7cb2bbba6c20ae4eaafd853a83954c8c8dd345ee391787bf"},
@@ -193,15 +206,15 @@ simplejson = [
     {file = "simplejson-3.11.1.win32-py3.5.exe", hash = "sha256:c76d55d78dc8b06c96fd08c6cc5e2b0b650799627d3f9ca4ad23f40db72d5f6d"},
 ]
 singer-python = [
-    {file = "singer-python-5.3.3.tar.gz", hash = "sha256:6dca36c6bf8c09f0af7e5568c137e37fc2edbb3bdbc30b046b49d1d3ba28d39d"},
+    {file = "singer-python-5.10.0.tar.gz", hash = "sha256:d8086dd0c51e8984bf0993ee0e823f83c0a9a164da68d851a4b8a9735ec28a05"},
 ]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
 urllib3 = [
-    {file = "urllib3-1.26.6-py2.py3-none-any.whl", hash = "sha256:39fb8672126159acb139a7718dd10806104dec1e2f0f6c88aab05d17df10c8d4"},
-    {file = "urllib3-1.26.6.tar.gz", hash = "sha256:f57b4c16c62fa2760b7e3d97c35b255512fb6b59a259730f36ba32ce9f8e342f"},
+    {file = "urllib3-1.26.9-py2.py3-none-any.whl", hash = "sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14"},
+    {file = "urllib3-1.26.9.tar.gz", hash = "sha256:aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e"},
 ]
 xmltodict = [
     {file = "xmltodict-0.11.0-py2.py3-none-any.whl", hash = "sha256:add07d92089ff611badec526912747cf87afd4f9447af6661aca074eeaf32615"},
