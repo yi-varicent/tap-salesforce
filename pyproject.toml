@@ -9,7 +9,7 @@ classifiers = ["Programming Language :: Python :: 3 :: Only"]
 [tool.poetry.dependencies]
 python = "~3.7"
 requests = "^2.20.0"
-singer-python = "~5.3.1"
+singer-python = "~5.10.0"
 xmltodict = "~0.11.0"
 
 [tool.poetry.dev-dependencies]
