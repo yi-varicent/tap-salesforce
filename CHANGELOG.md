@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.5.4
+  * Increase request timeout to 5 minutes from 30 seconds to support certain objects that take a bit longer to return during discovery in some cases [#126](https://github.com/singer-io/tap-salesforce/pull/126)
+
+## 1.5.3
+  * Added a condition to make sure batches are not empty list within a given job ID [#124](https://github.com/singer-io/tap-salesforce/pull/124)
+
+## 1.5.2
+  * Forces `LightningUriEvent`, `UriEvent`, `LogoutEvent`, `ReportEvent` streams to full table replication [#123](https://github.com/singer-io/tap-salesforce/pull/123)
+
+## 1.5.1
+  * Captures `stateMessage` attribute for PK-Chunked batches that fail to process and persists it through a modified exception [#120](https://github.com/singer-io/tap-salesforce/pull/120)
+
+## 1.5.0
+  * Bumps Salesforce api from v41 to v52, this includes new streams and some permission changes on existing streams [#116](https://github.com/singer-io/tap-salesforce/pull/116)
+
+## 1.4.39
+  * Add a 30 second timeout to all requests [#114](https://github.com/singer-io/tap-salesforce/pull/114)
+
+## 1.4.38
+  * Makes timer thread a daemon thread so that when main thread exits it's ensured that the process exits [#112](https://github.com/singer-io/tap-salesforce/pull/112)
+
+## 1.4.37
+  * Remove support for FieldHistoryArchive because we don't query for it properly [#101](https://github.com/singer-io/tap-salesforce/pull/101)
+
+## 1.4.36
+  * Modifies error message for OPERATION_TOO_LARGE errors [#98](https://github.com/singer-io/tap-salesforce/pull/98)
+
+## 1.4.35
+  * Modifies sync stream error message format [#96](https://github.com/singer-io/tap-salesforce/pull/96)
+
+## 1.4.34
+  * added NetworkUserHistory to objects blacklist [#86](https://github.com/singer-io/tap-salesforce/pull/86)
+
+## 1.4.33
+  * Add DataType to the set of QUERY_INCOMPATIBLE objects to sync [#84](https://github.com/singer-io/tap-salesforce/pull/84)
+
+## 1.4.32
+ * Force LoginEvent to have a replication method of Full Table [#80](https://github.com/singer-io/tap-salesforce/pull/80)
+
 ## 1.4.31
  * Extend bulk API PK chunking trigger to cover more error messages [#76](https://github.com/singer-io/tap-salesforce/pull/76)
 

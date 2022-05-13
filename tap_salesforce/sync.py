@@ -2,6 +2,7 @@ import time
 import singer
 import singer.utils as singer_utils
 from singer import Transformer, metadata, metrics
+from singer import SingerSyncError
 from requests.exceptions import RequestException
 from tap_salesforce.salesforce.bulk import Bulk
 
@@ -118,11 +119,15 @@ def sync_stream(sf, catalog_entry, state):
                 sync_report(sf, catalog_entry, state, counter)
             singer.write_state(state)
         except RequestException as ex:
-            raise Exception("Error syncing {}: {} Response: {}".format(
-                stream, ex, ex.response.text))
+            raise Exception("{} Response: {}, (Stream: {})".format(
+                ex, ex.response.text, stream)) from ex
         except Exception as ex:
-            raise Exception("Error syncing {}: {}".format(
-                stream, ex)) from ex
+            if "OPERATION_TOO_LARGE: exceeded 100000 distinct who/what's" in str(ex):
+                raise SingerSyncError("OPERATION_TOO_LARGE: exceeded 100000 distinct who/what's. " +
+                                      "Consider asking your Salesforce System Administrator to provide you with the " +
+                                      "`View All Data` profile permission. (Stream: {})".format(stream)) from ex
+            raise Exception("{}, (Stream: {})".format(
+                ex, stream)) from ex
 
         return counter
 

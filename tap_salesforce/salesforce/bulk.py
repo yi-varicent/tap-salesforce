@@ -40,7 +40,7 @@ def find_parent(stream):
 
 class Bulk():
 
-    bulk_url = "{}/services/async/41.0/{}"
+    bulk_url = "{}/services/async/52.0/{}"
 
     def __init__(self, sf):
         # Set csv max reading size to the platform's max size available.
@@ -73,10 +73,10 @@ class Bulk():
         with metrics.http_request_timer(endpoint):
             resp = self.sf._make_request('GET', url, headers=self.sf._get_standard_headers()).json()
 
-        quota_max = resp['DailyBulkApiRequests']['Max']
+        quota_max = resp['DailyBulkApiBatches']['Max']
         max_requests_for_run = int((self.sf.quota_percent_per_run * quota_max) / 100)
 
-        quota_remaining = resp['DailyBulkApiRequests']['Remaining']
+        quota_remaining = resp['DailyBulkApiBatches']['Remaining']
         percent_used = (1 - (quota_remaining / quota_max)) * 100
 
         if percent_used > self.sf.quota_percent_total:
@@ -154,7 +154,11 @@ class Bulk():
         batch_status['job_id'] = job_id
 
         if batch_status['failed']:
-            raise TapSalesforceException("One or more batches failed during PK chunked job")
+            raise TapSalesforceException(
+                "One or more batches failed during PK chunked job. {} failed out of {} total batches. First 20 failed batches: {}".format(
+                    len(batch_status['failed']),
+                    len(batch_status['completed']) + len(batch_status['failed']),
+                    list(batch_status['failed'].items())[:20]))
 
         # Close the job after all the batches are complete
         self._close_job(job_id)
@@ -216,7 +220,7 @@ class Bulk():
 
             if not queued_batches and not in_progress_batches:
                 completed_batches = [b['id'] for b in batches if b['state'] == "Completed"]
-                failed_batches = [b['id'] for b in batches if b['state'] == "Failed"]
+                failed_batches = {b['id']: b.get('stateMessage') for b in batches if b['state'] == "Failed"}
                 return {'completed': completed_batches, 'failed': failed_batches}
             else:
                 time.sleep(PK_CHUNKED_BATCH_STATUS_POLLING_SLEEP)
