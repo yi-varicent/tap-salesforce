@@ -44,7 +44,11 @@ class ReportRest():
                 'POST', url, headers=headers, body=json.dumps(body))
             resp_json = resp.json()
             report_results = resp_json.get('factMap').get("T!T").get('rows')
-            return self.__transform_report_api_result(report_results, report_metadata['reportMetadata']['detailColumns'])
+            detail_column_info = resp_json.get(
+                'reportExtendedMetadata').get('detailColumnInfo')
+            detail_columns = resp_json.get(
+                'reportMetadata').get('detailColumns')
+            return self.__transform_report_api_result(report_results, detail_columns, detail_column_info)
 
         except HTTPError as ex:
             response = ex.response.json()
@@ -54,7 +58,7 @@ class ReportRest():
                     catalog_entry['stream'])
             raise ex
 
-    def __transform_report_api_result(self, report_results, detail_columns):
+    def __transform_report_api_result(self, report_results, detail_columns, detail_column_info):
         # Transform and cleanup results
         results = []
         for row in report_results:
@@ -65,7 +69,10 @@ class ReportRest():
                 # For some fileds, value can be a link to that object, so we can't actually use it, that's why we only use label.
                 # There will be more corner cases with other types of reports, that all should be handled here
                 if data_cell[i]['value'] != None:
-                    tmp_row[detail_columns[i]] = data_cell[i]['label']
+                    if detail_column_info.get(detail_columns[i]).get('dataType') in set(['date', 'datetime']):
+                        tmp_row[detail_columns[i]] = data_cell[i]['value']
+                    else:
+                        tmp_row[detail_columns[i]] = data_cell[i]['label']
                 else:
                     tmp_row[detail_columns[i]] = ''
 
