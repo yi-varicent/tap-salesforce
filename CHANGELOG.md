@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.11
+## 2.0.12
 
 - Merge latest from singer-io/tap-salesforce
 
