@@ -61,7 +61,9 @@ class ReportRest():
 
     def __transform_report_api_result(self, report_results, detail_columns, detail_column_info):
         # if detail rows is not selected, report_results will be NoneType
-        if report_results == None: return []
+        # WP-9908, the error message will be handled in WP-10193
+        if report_results == None:
+            raise Exception("Report response is missing rows feature in factMap, could be related to detail rows feature is not selected in Salesforce")
 
         # Transform and cleanup results
         results = []
