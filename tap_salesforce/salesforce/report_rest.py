@@ -43,6 +43,7 @@ class ReportRest():
             resp = self.sf._make_request(
                 'POST', url, headers=headers, body=json.dumps(body))
             resp_json = resp.json()
+            # T!T rows feature only exists when detail feature is selected in salesforce reports
             report_results = resp_json.get('factMap').get("T!T").get('rows')
             detail_column_info = resp_json.get(
                 'reportExtendedMetadata').get('detailColumnInfo')
@@ -60,6 +61,9 @@ class ReportRest():
 
     def __transform_report_api_result(self, report_results, detail_columns, detail_column_info):
         # Transform and cleanup results
+        # if detail rows is not selected, report_results will be NoneType
+        if report_results == None: return []
+
         results = []
         for row in report_results:
             data_cell = row['dataCells']
