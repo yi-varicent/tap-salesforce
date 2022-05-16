@@ -60,10 +60,10 @@ class ReportRest():
             raise ex
 
     def __transform_report_api_result(self, report_results, detail_columns, detail_column_info):
-        # Transform and cleanup results
         # if detail rows is not selected, report_results will be NoneType
         if report_results == None: return []
 
+        # Transform and cleanup results
         results = []
         for row in report_results:
             data_cell = row['dataCells']
