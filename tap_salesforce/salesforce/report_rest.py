@@ -63,7 +63,7 @@ class ReportRest():
         # if detail rows is not selected, report_results will be NoneType
         # WP-9908, the error message will be handled in WP-10193
         if report_results == None:
-            raise Exception("Report response is missing rows feature in factMap, could be related to detail rows feature is not selected in Salesforce")
+            raise Exception("The Report response is missing the rows feature in factMap, check that the detail rows feature is selected in Salesforce")
 
         # Transform and cleanup results
         results = []
