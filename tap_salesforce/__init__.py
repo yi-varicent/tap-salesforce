@@ -124,9 +124,7 @@ def create_property_schema(field, mdata, source_type):
     return (property_schema, mdata)
 
 
-def create_report_property_schema(field, mdata, source_type):
-    field_name = field['label']
-
+def create_report_property_schema(field_name, field, mdata, source_type):
     mdata = metadata.write(
         mdata, ('properties', field_name), 'inclusion', 'available')
 
@@ -164,7 +162,7 @@ def do_discover_report(sf):
     # Loop over the report's fields
     for field_name, field in fields.items():
         property_schema, mdata = create_report_property_schema(
-            field, mdata, sf.source_type)
+            field_name, field, mdata, sf.source_type)
 
         # Compound Address fields and geolocations cannot be queried by the Bulk API, so we ignore them
         if field['dataType'] in ("address", "location") and sf.api_type == tap_salesforce.salesforce.BULK_API_TYPE:
@@ -176,6 +174,11 @@ def do_discover_report(sf):
         if field['dataType'] == "json":
             unsupported_fields.add(
                 (field_name, 'do not currently support json fields - please contact support'))
+
+        # for currency types, split up the amount and the currency ISO code into two fields (WP-8218)
+        # we do this by creating an extra field with " Currency" appended to the field name
+        if field['dataType'] == "currency":
+            properties[field_name + ' Currency'] = {'type': ["string", "null"]}
 
         inclusion = metadata.get(
             mdata, ('properties', field_name), 'inclusion')
@@ -475,10 +478,12 @@ def do_sync(sf, catalog, state):
             replication_key,
             stream_alias)
 
-        job_id = singer.get_bookmark(state, catalog_entry['tap_stream_id'], 'JobID')
-        batch_ids = singer.get_bookmark(state, catalog_entry['tap_stream_id'], 'BatchIDs')
+        job_id = singer.get_bookmark(
+            state, catalog_entry['tap_stream_id'], 'JobID')
+        batch_ids = singer.get_bookmark(
+            state, catalog_entry['tap_stream_id'], 'BatchIDs')
         # Checking whether job_id list is not empty and batches list is not empty
-        if job_id and batch_ids :
+        if job_id and batch_ids:
             with metrics.record_counter(stream) as counter:
                 LOGGER.info(
                     "Found JobID from previous Bulk Query. Resuming sync for job: %s", job_id)

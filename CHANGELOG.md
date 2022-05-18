@@ -1,5 +1,10 @@
 # Changelog
 
+
+## 2.0.14
+
+- splits up currency type fields into two separate fields - currency ISO code and amount 
+
 ## 2.0.13
 
 - Handle side case for reports importing when the `detail rows` feature is not selected in salesforce reports 

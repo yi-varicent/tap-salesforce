@@ -63,7 +63,8 @@ class ReportRest():
         # if detail rows is not selected, report_results will be NoneType
         # WP-9908, the error message will be handled in WP-10193
         if report_results == None:
-            raise Exception("The Report response is missing the rows feature in factMap, check that the detail rows feature is selected in Salesforce")
+            raise Exception(
+                "The Report response is missing the rows feature in factMap, check that the Detail Rows toggle is true in the report settings")
 
         # Transform and cleanup results
         results = []
@@ -77,6 +78,11 @@ class ReportRest():
                 if data_cell[i]['value'] != None:
                     if detail_column_info.get(detail_columns[i]).get('dataType') in set(['date', 'datetime']):
                         tmp_row[detail_columns[i]] = data_cell[i]['value']
+                    elif detail_column_info.get(detail_columns[i]).get('dataType') == 'currency':
+                        tmp_row[(detail_columns[i] + ' Currency')
+                                ] = data_cell[i]['value']['currency']
+                        tmp_row[detail_columns[i]
+                                ] = data_cell[i]['value']['amount']
                     else:
                         tmp_row[detail_columns[i]] = data_cell[i]['label']
                 else:
