@@ -5,11 +5,29 @@
 
 [Singer](https://www.singer.io/) tap that extracts data from a [Salesforce](https://www.salesforce.com/) database and produces JSON-formatted data following the [Singer spec](https://github.com/singer-io/getting-started/blob/master/docs/SPEC.md#singer-specification).
 
-```bash
-$ mkvirtualenv -p python3 tap-salesforce
-$ pip install tap-salesforce
-$ tap-salesforce --config config.json --discover
-$ tap-salesforce --config config.json --properties properties.json --state state.json
+# Install and Run
+
+Ensure poetry is installed on your machine. 
+
+- This command will return the installed version of poetry if it is installed.
+```
+poetry --version
+```
+
+- If not, install poetry using the following commands (from https://python-poetry.org/docs/#installation):
+```
+curl -sSL https://install.python-poetry.org | python3 -
+PATH=~/.local/bin:$PATH
+```
+
+Within the `tap-salesforce` directory, install dependencies:
+```
+poetry install
+```
+
+Then run the tap:
+```
+poetry run tap-salesforce <options>
 ```
 
 ## Symon Specific updates
