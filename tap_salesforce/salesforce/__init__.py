@@ -114,7 +114,7 @@ QUERY_RESTRICTED_SALESFORCE_OBJECTS = set(['Announcement',
                                            'FlowVariableView',
                                            'AppTabMember',
                                            'ColorDefinition',
-                                           'IconDefinition',])
+                                           'IconDefinition', ])
 
 # The following objects are not supported by the query method being used.
 QUERY_INCOMPATIBLE_SALESFORCE_OBJECTS = set(['DataType',
@@ -160,9 +160,8 @@ def field_to_property_schema(field, mdata, source_type):  # pylint:disable=too-m
     if sf_type in STRING_TYPES:
         property_schema['type'] = "string"
     elif sf_type in DATE_TYPES:
-        date_type = {"type": "string", "format": "date-time"}
-        string_type = {"type": ["string", "null"]}
-        property_schema["anyOf"] = [date_type, string_type]
+        property_schema["format"] = "date-time"
+        property_schema['type'] = ["string", "null"]
     elif sf_type == "boolean":
         property_schema['type'] = "boolean"
     elif sf_type in NUMBER_OR_STRING_TYPES:
@@ -322,22 +321,25 @@ class Salesforce():
 
     # pylint: disable=too-many-arguments
     @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.ConnectionError, requests.exceptions.Timeout),
+                          (requests.exceptions.ConnectionError,
+                           requests.exceptions.Timeout),
                           max_tries=10,
                           factor=2,
                           on_backoff=log_backoff_attempt)
     def _make_request(self, http_method, url, headers=None, body=None, stream=False, params=None):
-        request_timeout = 5 * 60 # 5 minute request timeout
+        request_timeout = 5 * 60  # 5 minute request timeout
         try:
             if http_method == "GET":
-                LOGGER.info("Making %s request to %s with params: %s", http_method, url, params)
+                LOGGER.info("Making %s request to %s with params: %s",
+                            http_method, url, params)
                 resp = self.session.get(url,
                                         headers=headers,
                                         stream=stream,
                                         params=params,
                                         timeout=request_timeout,)
             elif http_method == "POST":
-                LOGGER.info("Making %s request to %s with body %s", http_method, url, body)
+                LOGGER.info("Making %s request to %s with body %s",
+                            http_method, url, body)
                 resp = self.session.post(url,
                                          headers=headers,
                                          data=body,
@@ -345,13 +347,13 @@ class Salesforce():
             else:
                 raise TapSalesforceException("Unsupported HTTP method")
         except requests.exceptions.ConnectionError as connection_err:
-            LOGGER.error('Took longer than %s seconds to connect to the server', request_timeout)
+            LOGGER.error(
+                'Took longer than %s seconds to connect to the server', request_timeout)
             raise connection_err
         except requests.exceptions.Timeout as timeout_err:
-            LOGGER.error('Took longer than %s seconds to hear from the server', request_timeout)
+            LOGGER.error(
+                'Took longer than %s seconds to hear from the server', request_timeout)
             raise timeout_err
-
-
 
         try:
             resp.raise_for_status()
@@ -397,8 +399,10 @@ class Salesforce():
             raise Exception(error_message) from e
         finally:
             LOGGER.info("Starting new login timer")
-            self.login_timer = threading.Timer(REFRESH_TOKEN_EXPIRATION_PERIOD, self.login)
-            self.login_timer.daemon = True # The timer should be a daemon thread so the process exits.
+            self.login_timer = threading.Timer(
+                REFRESH_TOKEN_EXPIRATION_PERIOD, self.login)
+            # The timer should be a daemon thread so the process exits.
+            self.login_timer.daemon = True
             self.login_timer.start()
 
     def describe(self):
