@@ -305,8 +305,8 @@ def fix_record_anytype(rec, schema):
 
             rec[k] = val
         elif typ == 'number' or 'number' in typ:
-            rec[k] = '' if v == '-' else v
+            rec[k] = '' if v is not None and v == '-' else v
         elif format is not None and format == 'date-time':
-            rec[k] = '' if v.lower() == '<null>' else v
+            rec[k] = '' if v is not None and v.lower() == '<null>' else v
 
     return rec
